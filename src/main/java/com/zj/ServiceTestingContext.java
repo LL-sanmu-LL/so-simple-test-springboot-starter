@@ -7,7 +7,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.WebApplicationContext;
 
-//@ComponentScan({"com.weimob.saas.ec.troop.common.testing*"})
 public class ServiceTestingContext implements ApplicationContextAware {
     @Getter
     private static ApplicationContext context;
