@@ -7,7 +7,6 @@ import java.lang.annotation.*;
 /**
  * 注解启用服务测试工具
  *
- * @author peng.peng
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
