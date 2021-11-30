@@ -6,7 +6,7 @@
 
     <groupId>io.github.ll-sanmu-ll</groupId>
     <artifactId>so-simple-test-springboot-starter</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -41,7 +41,6 @@
         </dependency>
     </dependencies>
 
-
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
@@ -66,7 +65,6 @@
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
-            <!--Javadoc and source-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -88,10 +86,11 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                        <configuration>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!--gpg-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
@@ -101,11 +100,9 @@
                         <id>sign-artifacts</id>
                         <phase>verify</phase>
                         <goals>
-<!--                            <goal>sign</goal>-->
+                            <goal>sign</goal>
                         </goals>
                         <configuration>
-                            <keyname>0xB558EE70</keyname>
-                            <passphraseServerId>0xB558EE70</passphraseServerId>
                         </configuration>
                     </execution>
                 </executions>
