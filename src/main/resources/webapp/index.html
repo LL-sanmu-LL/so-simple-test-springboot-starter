@@ -203,7 +203,11 @@
         };
 
         var loadMethods = function () {
-            var serviceName = $('select[name="serviceName"]').val();
+            let serviceName = $('select[name="serviceName"]').val();
+            if(serviceName == null || serviceName === "" || serviceName=== "undefined") {
+                console.log("serviceName为空");
+                return;
+            }
             $.ajax({
                 url: relativePath + '/testing/methods',
                 method: 'post',
@@ -211,7 +215,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify({serviceName: serviceName}),
                 success: function (response) {
-                    var data = processResult(response);
+                    let data = processResult(response);
                     if (data && data.length > 0) {
                         initMethod(serviceName, data);
                     }

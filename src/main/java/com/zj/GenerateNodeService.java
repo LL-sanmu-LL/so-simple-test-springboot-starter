@@ -40,6 +40,9 @@ public class GenerateNodeService {
                 if(clz.isInterface()){
                     return obj;
                 }
+                if(clz.isEnum()){
+                    return obj;
+                }
                 obj = clz.newInstance();
                 List<Field> fields = getClassField(clz);
                 Iterator var4 = fields.iterator();
