@@ -3,6 +3,8 @@ package com.zj;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.TargetClassAware;
 import org.springframework.aop.framework.AdvisedSupport;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -20,10 +22,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
+@Slf4j
 @RequestMapping({"**/testing"})
 public class ServiceTestingController {
     /**
@@ -108,7 +109,7 @@ public class ServiceTestingController {
             }
         }
         // 父类接口方法
-        Class superclass = clazz.getSuperclass();
+        Class<?> superclass = clazz.getSuperclass();
         Method[] superDeclaredMethods = null;
         if (superclass != null) {
             superDeclaredMethods = superclass.getDeclaredMethods();
@@ -135,14 +136,20 @@ public class ServiceTestingController {
         String methodName = request.getString("methodName");
         Object bean = ServiceTestingContext.getBean(serviceName);
         Object result = null;
-        for (Method method : bean.getClass().getDeclaredMethods()) {
-            try {
-                if (methodName.equals(method.getName())) {
-                    result = InterfaceParametersUtils.getInterfaceInputJsonString(bean.getClass().getName(), method.getName());
-                    break;
+        Class<?> clazz = bean.getClass();
+        if(bean instanceof TargetClassAware){
+            clazz = ((TargetClassAware) bean).getTargetClass();
+        }
+        if(clazz != null){
+            for (Method method : clazz.getDeclaredMethods()) {
+                try {
+                    if (methodName.equals(method.getName())) {
+                        result = InterfaceParametersUtils.getInterfaceInputJsonString(clazz.getName(), method.getName());
+                        break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
 
@@ -163,15 +170,22 @@ public class ServiceTestingController {
         String param = request.getString("param");
         Object bean = ServiceTestingContext.getBean(serviceName);
         // 获取Bean的真实类，这样保证JSON.parseObject按照类型对泛型，反序列化不出问题
-        Class realBeanClass = AopUtils.getTargetClass(bean);
+        Class<?> realBeanClass = AopUtils.getTargetClass(bean);
         Object result = null;
 
         try {
-            // 每个接口均存在InvokeParamVo参数，加入到参数列表
-            // 1、单个参数{}，构造成[]
-            // 2/多参数[]，直接将InvokeParamVo加在第一个参数
-
-            boolean isInvoked = false;
+            if(bean instanceof TargetClassAware){//jdk动态代理
+                Proxy proxyBean = (Proxy)bean;
+                InvocationHandler handler = (InvocationHandler) new DirectFieldAccessor(proxyBean)
+                        .getPropertyValue("h");
+                Class<?> clazz = ((TargetClassAware) bean).getTargetClass();
+                if(clazz == null){
+                    log.error("clazz is not exist");
+                    return result;
+                }
+                Method method = Arrays.stream(clazz.getDeclaredMethods()).filter(v -> methodName.equals(v.getName())).findFirst().orElse(null);
+                return invokeProxyMethod(handler, bean, method, param);
+            }
             // 必须用getInterfaces，这样才能取到方法参数的泛型
             if (bean.getClass().isInterface()) {
                 // 获取接口或类的所有方法
@@ -190,43 +204,34 @@ public class ServiceTestingController {
                     }
                 }
 
-                for (Method method : methodList) {
-                    try {
-                        if (methodName.equals(method.getName())) {
-                            isInvoked = true;
-                            result = invokeMethod(bean, method, param);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    if (isInvoked) {
-                        break;
-                    }
+                Method method = methodList.stream().filter(v -> methodName.equals(v.getName())).findFirst().orElse(null);
+                try {
+                    return invokeMethod(bean, method, param);
+                } catch (Exception e) {
+                    log.error("invokeMethod failed", e);
                 }
             } else {
                 // 非接口实现类
-                for (Method method : realBeanClass.getDeclaredMethods()) {
-                    try {
-                        if (methodName.equals(method.getName())) {
-                            isInvoked = true;
-                            result = invokeMethod(bean, method, param);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    if (isInvoked) {
-                        break;
-                    }
+                Method method = Arrays.stream(realBeanClass.getDeclaredMethods()).filter(v -> methodName.equals(v.getName())).findFirst().orElse(null);
+                try {
+                    return invokeMethod(bean, method, param);
+
+                } catch (Exception e) {
+                    log.error("invokeMethod failed", e);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            log.error("invokeMethod failed", e);
         }
 
         return result;
     }
 
     public Object invokeMethod(Object bean, Method targetMethod, String inputParams) throws Exception {
+        if(targetMethod == null){
+            log.error("targetMethod is null");
+            return null;
+        }
         Type[] types = targetMethod.getGenericParameterTypes();
         List<String> paramList = processParams(targetMethod, inputParams);
         List<Object> params = new ArrayList<>();
@@ -243,6 +248,31 @@ public class ServiceTestingController {
                 params.add(paramObject);
             }
             return targetMethod.invoke(bean, params.toArray());
+        }
+        return null;
+    }
+
+    public Object invokeProxyMethod(InvocationHandler handler, Object bean, Method targetMethod, String inputParams) throws Throwable {
+        if(targetMethod == null){
+            log.error("targetMethod is null");
+            return null;
+        }
+        Type[] types = targetMethod.getGenericParameterTypes();
+        List<String> paramList = processParams(targetMethod, inputParams);
+        List<Object> params = new ArrayList<>();
+        // 参数数量必须相同
+        if (types.length == paramList.size()) {
+            for (int i = 0; i < types.length; i++) {
+                String paramJson = paramList.get(i);
+                Object paramObject;
+                try {
+                    paramObject = types[i] == String.class ? paramJson : JSON.parseObject(paramJson, types[i]);
+                } catch (Exception e) {
+                    paramObject = paramList.get(i);
+                }
+                params.add(paramObject);
+            }
+            return handler.invoke(bean, targetMethod, params.toArray());
         }
         return null;
     }
