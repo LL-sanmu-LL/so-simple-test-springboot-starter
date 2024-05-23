@@ -7,6 +7,31 @@
     <groupId>io.github.ll-sanmu-ll</groupId>
     <artifactId>so-simple-test-springboot-starter</artifactId>
     <version>1.4</version>
+    <name>so-simple-test-springboot-starter</name>
+    <description>一个用于springboot的测试工具.</description>
+    <url>https://github.com/LL-sanmu-LL/so-simple-test-springboot-starter</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>LL-sanmu-LL</name>
+            <email>707350162@qq.com</email>
+            <organization>LL-sanmu-LL</organization>
+            <organizationUrl>https://github.com/LL-sanmu-LL</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/LL-sanmu-LL/so-simple-test-springboot-starter.git</connection>
+        <developerConnection>https://github.com/LL-sanmu-LL/so-simple-test-springboot-starter.git</developerConnection>
+        <url>https://github.com/LL-sanmu-LL/so-simple-test-springboot-starter</url>
+    </scm>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -59,14 +84,13 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.7</version>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.4.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <publishingServerId>central</publishingServerId>
+                    <tokenAuth>true</tokenAuth>
                 </configuration>
             </plugin>
             <plugin>
@@ -95,23 +119,26 @@
                     </execution>
                 </executions>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-gpg-plugin</artifactId>-->
-<!--                <version>1.5</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>sign-artifacts</id>-->
-<!--                        <phase>verify</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>sign</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <configuration>
+                    <executable>D:\Program Files (x86)\GnuPG\bin\gpg.exe</executable>
+                    <keyname>lilin</keyname>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
