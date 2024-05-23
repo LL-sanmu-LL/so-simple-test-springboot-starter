@@ -174,7 +174,16 @@ public class ServiceTestingController {
         Object result = null;
 
         try {
-            if(bean instanceof TargetClassAware){//jdk动态代理
+            if (AopUtils.isCglibProxy(bean)){//cglib动态代理
+                Method method = Arrays.stream(realBeanClass.getDeclaredMethods()).filter(v -> methodName.equals(v.getName())).findFirst().orElse(null);
+                try {
+                    return invokeMethod(bean, method, param);
+
+                } catch (Exception e) {
+                    log.error("invokeMethod failed", e);
+                }
+            }
+            if(AopUtils.isJdkDynamicProxy(bean)){//jdk动态代理
                 Proxy proxyBean = (Proxy)bean;
                 InvocationHandler handler = (InvocationHandler) new DirectFieldAccessor(proxyBean)
                         .getPropertyValue("h");
@@ -197,7 +206,6 @@ public class ServiceTestingController {
                         }
                     }
                 }
-                // cglib动态代理
                 for (Method method : realBeanClass.getDeclaredMethods()) {
                     if (!methodList.contains(method)) {
                         methodList.add(method);
